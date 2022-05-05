@@ -794,6 +794,19 @@ describe('Sørensen.bind', () => {
 				await bindCombo('Control+KeyD', { preventDefaultDown: true })
 				await bindCombo('KeyA+KeyB', { preventDefaultDown: true })
 				await bindCombo('Control+KeyC Shift+KeyD KeyE', { preventDefaultDown: true })
+				await bindCombo('KeyK', { preventDefaultDown: true, global: true })
+				await bindCombo('KeyL', { preventDefaultDown: true, global: false })
+			})
+			beforeEach(async () => {
+				await page.evaluate(() => {
+					const input = document.querySelector('input')
+					if (input) {
+						input.value = ''
+					}
+				})
+			})
+			afterAll(async () => {
+				await page.focus('button')
 			})
 
 			it('Control+KeyD does trigger preventDefault', async () => {
@@ -871,6 +884,40 @@ describe('Sørensen.bind', () => {
 				await page.keyboard.press('KeyE')
 				await expectToTrigger('Control+KeyC Shift+KeyD KeyE', 1)
 				await expectToBePrevented('Control+KeyC Shift+KeyD KeyE', 1)
+			})
+
+			it('Global KeyK is preventDefault\'ed in input', async () => {
+				const input = await page.$('input')
+				await page.evaluate(el => el.value = '', input)
+
+				await page.focus('input')
+				await expectToBePrevented('KeyK', 0)
+
+				await page.keyboard.down('KeyK')
+				await expectToBePrevented('KeyK', 1)
+
+				await page.keyboard.up('KeyK')
+				await expectToBePrevented('KeyK', 1)
+
+				let value = await page.evaluate(el => el.value, input)
+				expect(value).toBe('')
+			})
+
+			it('Non-global KeyL is not preventDefault\'ed in input', async () => {
+				const input = await page.$('input')
+				await page.evaluate(el => el.value = '', input)
+
+				await page.focus('input')
+				await expectToBePrevented('KeyL', 0)
+
+				await page.keyboard.down('KeyL')
+				await expectToBePrevented('KeyL', 0)
+
+				await page.keyboard.up('KeyL')
+				await expectToBePrevented('KeyL', 0)
+
+				let value = await page.evaluate(el => el.value, input)
+				expect(value).toBe('l')
 			})
 		})
 
